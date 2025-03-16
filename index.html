@@ -483,8 +483,16 @@
       }
     }
     document.addEventListener('DOMContentLoaded', function(){
+      // استعادة الوضع الليلي
       if(localStorage.getItem('darkMode') === 'enabled'){
         document.body.classList.add('dark-mode');
+      }
+
+      // استعادة حالة البث (إن وجدت) من localStorage
+      const savedTitle = localStorage.getItem('liveBroadcastTitle');
+      const savedEmbed = localStorage.getItem('liveBroadcastEmbed');
+      if(savedTitle && savedEmbed) {
+        startLiveBroadcast(savedTitle, savedEmbed, false); 
       }
     });
 
@@ -545,7 +553,6 @@
         document.getElementById('newsTab').classList.remove('active');
       }
     }
-    /* إغلاق نافذة الدخول عند الضغط خارجها */
     window.onclick = function(event) {
       const modal = document.getElementById('adminModal');
       if (event.target == modal) {
@@ -600,13 +607,12 @@
       this.style.display = "none";
     });
 
-    /* دالة لإضافة بطاقة خبر جديدة في أعلى القائمة (الأحدث في الأعلى) */
     function addNewsCard(title, summary, imageSrc, link, imageSize) {
       const newsContainer = document.getElementById('newsContainer');
       const placeholder = newsContainer.querySelector('.placeholder');
       if(placeholder) { placeholder.remove(); }
 
-      // أنشئ العنصر الجديد
+      // عنصر الخبر
       const newsCard = document.createElement('div');
       newsCard.className = `news-card news-card-${imageSize}`;
       let squareSize;
@@ -624,8 +630,7 @@
           <a href="${link}" target="_blank">اقرأ المزيد</a>
         </div>
       `;
-
-      // إنشاء أزرار التعديل والحذف
+      // أزرار التعديل والحذف
       const actions = document.createElement('div');
       actions.className = "card-actions";
       const editBtn = document.createElement('button');
@@ -644,10 +649,9 @@
       actions.appendChild(deleteBtn);
       newsCard.querySelector('.content').appendChild(actions);
 
-      // **إضافة العنصر الجديد في أعلى القائمة** بدلاً من أسفلها
+      // الأخبار الأحدث في الأعلى
       newsContainer.insertBefore(newsCard, newsContainer.firstChild);
     }
-
     function editNewsCard(card) {
       currentEditingCard = card;
       const title = card.querySelector('h3').textContent;
@@ -664,7 +668,6 @@
       document.getElementById('submitNewsBtn').textContent = "تحديث الخبر";
       document.getElementById('cancelEdit').style.display = "block";
     }
-
     function updateNewsCard(card, title, summary, imageSrc, link, imageSize) {
       card.querySelector('h3').textContent = title;
       card.querySelector('p').textContent = summary;
@@ -707,7 +710,7 @@
       const liveTitle = document.getElementById('liveTitle').value;
       let liveEmbed = document.getElementById('liveEmbed').value.trim();
 
-      // حاول تحويل رابط يوتيوب إلى صيغة embed
+      // إذا الرابط رابط يوتيوب -> تحويله لصيغة embed
       if((liveEmbed.startsWith("http://") || liveEmbed.startsWith("https://")) && liveEmbed.includes("youtube.com")) {
         const embedUrl = parseYoutubeLink(liveEmbed);
         if(embedUrl) {
@@ -718,25 +721,39 @@
       alert("تم بدء البث المباشر: " + liveTitle);
       e.target.reset();
     });
-    function startLiveBroadcast(title, embedCode) {
+
+    // أضفنا باراميتر (saveToStorage = true) للتحكم في حفظ البث من DOMContentLoaded
+    function startLiveBroadcast(title, embedCode, saveToStorage = true) {
       const liveBroadcast = document.getElementById('liveBroadcast');
       liveBroadcast.style.display = "block";
+
       let videoHTML = "";
       if(embedCode.startsWith("http://") || embedCode.startsWith("https://")){
         videoHTML = `<iframe src="${embedCode}" frameborder="0" allowfullscreen style="width:100%; height:400px;"></iframe>`;
       } else {
         videoHTML = embedCode; // كود تضمين HTML
       }
+
       liveBroadcast.innerHTML = `
         <button class="delete-broadcast-btn" onclick="deleteBroadcast()">حذف البث</button>
         <h2>${title}</h2>
         <div class="live-embed">${videoHTML}</div>
       `;
+
+      // حفظ حالة البث في localStorage إذا لم تكن عملية استعادة
+      if(saveToStorage) {
+        localStorage.setItem('liveBroadcastTitle', title);
+        localStorage.setItem('liveBroadcastEmbed', embedCode);
+      }
     }
     function deleteBroadcast() {
+      // حذف من الصفحة
       const liveBroadcast = document.getElementById('liveBroadcast');
       liveBroadcast.innerHTML = '';
       liveBroadcast.style.display = 'none';
+      // حذف من localStorage
+      localStorage.removeItem('liveBroadcastTitle');
+      localStorage.removeItem('liveBroadcastEmbed');
       alert("تم حذف البث المباشر بنجاح.");
     }
 
@@ -745,6 +762,7 @@
     async function startLocalCameraBroadcast() {
       try {
         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        // الكاميرا المحلية لا تُحفظ في localStorage لأنها لا تصلح للاستعادة
         const liveBroadcast = document.getElementById('liveBroadcast');
         liveBroadcast.style.display = "block";
         liveBroadcast.innerHTML = `
