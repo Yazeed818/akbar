@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>موقع الأخبار - متطور جداً</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* إعادة تعيين الأنماط */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f0f2f5;
+      color: #333;
+      line-height: 1.6;
+      transition: background 0.3s, color 0.3s;
+    }
+    /* رأس الصفحة */
+    header {
+      background: #4a90e2;
+      color: #fff;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    header h1 {
+      font-size: 28px;
+      font-weight: 600;
+    }
+    nav ul {
+      list-style: none;
+      display: flex;
+      gap: 20px;
+    }
+    nav ul li a {
+      text-decoration: none;
+      color: #fff;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+    nav ul li a:hover {
+      color: #e0e0e0;
+    }
+    .toggle-btn {
+      background: #fff;
+      color: #4a90e2;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 30px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.3s, transform 0.3s;
+    }
+    .toggle-btn:hover {
+      transform: scale(1.05);
+    }
+    header > .toggle-btn.admin-login {
+      background: #ff9800;
+      color: #fff;
+    }
+    /* لوحة الإدارة بتأثير Glassmorphism */
+    .admin-sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 300px;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      border-right: 1px solid rgba(255, 255, 255, 0.3);
+      color: #fff;
+      padding: 20px;
+      transform: translateX(-100%);
+      transition: transform 0.4s ease;
+      z-index: 1500;
+    }
+    .admin-sidebar.active {
+      transform: translateX(0);
+    }
+    .admin-sidebar h2 {
+      margin-bottom: 20px;
+      font-size: 22px;
+      font-weight: 600;
+      border-bottom: 1px solid rgba(255,255,255,0.3);
+      padding-bottom: 10px;
+    }
+    .admin-sidebar .close-admin {
+      background: #e74c3c;
+      border: none;
+      color: #fff;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-weight: 500;
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      border-radius: 4px;
+      transition: transform 0.3s;
+    }
+    .admin-sidebar .close-admin:hover {
+      transform: scale(1.1);
+    }
+    .admin-tab {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+    }
+    .admin-tab button {
+      background: rgba(0,0,0,0.2);
+      color: #fff;
+      border: none;
+      padding: 8px 12px;
+      cursor: pointer;
+      border-radius: 20px;
+      transition: background 0.3s;
+      flex: 1;
+    }
+    .admin-tab button.active {
+      background: #4a90e2;
+    }
+    .admin-content {
+      display: none;
+      animation: fadeIn 0.4s ease;
+    }
+    .admin-content.active {
+      display: block;
+    }
+    .admin-content form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .admin-content form input,
+    .admin-content form textarea,
+    .admin-content form select {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      transition: border-color 0.3s;
+    }
+    .admin-content form input:focus,
+    .admin-content form textarea:focus,
+    .admin-content form select:focus {
+      border-color: #4a90e2;
+      outline: none;
+    }
+    .admin-content form button {
+      background: #4a90e2;
+      color: #fff;
+      border: none;
+      padding: 12px;
+      border-radius: 30px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.3s;
+    }
+    .admin-content form button:hover {
+      background: #357ABD;
+    }
+    /* زر إلغاء التعديل */
+    #cancelEdit {
+      background: #e74c3c;
+      color: #fff;
+      border: none;
+      padding: 10px;
+      border-radius: 30px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.3s;
+      display: none;
+    }
+    #cancelEdit:hover {
+      background: #c0392b;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    /* نافذة دخول الإدارة (Modal) */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 2000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 320px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      animation: slideDown 0.5s ease;
+    }
+    @keyframes slideDown {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .modal-content input {
+      width: 100%;
+      padding: 10px;
+      margin: 15px 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      transition: border-color 0.3s;
+    }
+    .modal-content input:focus {
+      border-color: #4a90e2;
+      outline: none;
+    }
+    .modal-content button {
+      background: #4a90e2;
+      color: #fff;
+      border: none;
+      padding: 10px;
+      width: 100%;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .modal-content button:hover {
+      background: #357ABD;
+    }
+    /* المحتوى الرئيسي */
+    main {
+      margin-left: 0;
+      transition: margin-left 0.4s;
+      padding: 20px;
+    }
+    /* قسم البث المباشر (أعلى الصفحة) */
+    .live-broadcast {
+      margin-bottom: 20px;
+      padding: 20px;
+      border-radius: 12px;
+      background: rgba(74, 144, 226, 0.1);
+      border: 1px solid rgba(74, 144, 226, 0.3);
+      text-align: center;
+      animation: fadeIn 0.4s ease;
+      position: relative;
+    }
+    .live-broadcast h2 {
+      margin-bottom: 10px;
+      font-size: 24px;
+      color: #4a90e2;
+    }
+    .delete-broadcast-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: #e74c3c;
+      color: #fff;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .delete-broadcast-btn:hover {
+      background: #c0392b;
+    }
+    /* قسم الأخبار باستخدام Grid */
+    .news-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .news-card {
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      transition: transform 0.3s;
+      position: relative;
+    }
+    .news-card:hover {
+      transform: translateY(-5px);
+    }
+    .img-container {
+      margin: auto;
+    }
+    .news-card .content {
+      padding: 15px;
+    }
+    .news-card h3 {
+      font-size: 20px;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+    .news-card p {
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+    .news-card a {
+      text-decoration: none;
+      color: #4a90e2;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+    .news-card a:hover {
+      color: #357ABD;
+    }
+    .card-actions {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+    .card-actions button {
+      background: #4a90e2;
+      color: #fff;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .card-actions button:hover {
+      background: #357ABD;
+    }
+    .placeholder {
+      text-align: center;
+      margin: 40px 0;
+      font-size: 18px;
+      color: #666;
+    }
+    /* التذييل */
+    footer {
+      background: #4a90e2;
+      color: #fff;
+      text-align: center;
+      padding: 20px;
+      margin-top: 30px;
+    }
+    /* زر الرجوع للأعلى */
+    #backToTop {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: #4a90e2;
+      color: #fff;
+      border: none;
+      padding: 12px 16px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      font-size: 20px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      transition: transform 0.3s;
+      z-index: 1000;
+    }
+    #backToTop:hover {
+      transform: scale(1.1);
+    }
+    /* الوضع الداكن */
+    .dark-mode {
+      background: #121212;
+      color: #e0e0e0;
+    }
+    .dark-mode header,
+    .dark-mode footer {
+      background: #1c1c1c;
+    }
+    .dark-mode .toggle-btn {
+      background: #333;
+      color: #fff;
+    }
+    .dark-mode .admin-sidebar {
+      background: rgba(0,0,0,0.5);
+      border-right: 1px solid rgba(255,255,255,0.2);
+    }
+  </style>
+</head>
+<body>
+  <!-- لوحة الإدارة -->
+  <div id="adminSidebar" class="admin-sidebar">
+    <button class="close-admin" onclick="toggleAdminSidebar()">X</button>
+    <h2>لوحة الإدارة</h2>
+    <div class="admin-tab">
+      <button id="newsTab" class="active" onclick="showAdminTab('news')">إضافة خبر</button>
+      <button id="liveTab" onclick="showAdminTab('live')">بث مباشر</button>
+    </div>
+    <!-- تبويب إضافة الخبر -->
+    <div id="adminNews" class="admin-content active">
+      <form id="newsForm">
+        <input type="text" id="newsTitle" placeholder="عنوان الخبر" required>
+        <textarea id="newsSummary" placeholder="ملخص الخبر" rows="3" required></textarea>
+        <input type="file" id="newsImageFile" accept="image/*" required>
+        <label for="newsImageSize">حجم الصورة:</label>
+        <select id="newsImageSize" required>
+          <option value="large">كبير</option>
+          <option value="medium" selected>وسط</option>
+          <option value="small">صغير</option>
+        </select>
+        <input type="text" id="newsLink" placeholder="رابط التفاصيل" required>
+        <button type="submit" id="submitNewsBtn">نشر الخبر</button>
+        <button type="button" id="cancelEdit">إلغاء التعديل</button>
+      </form>
+    </div>
+    <!-- تبويب البث المباشر -->
+    <div id="adminLive" class="admin-content">
+      <form id="liveForm">
+        <input type="text" id="liveTitle" placeholder="عنوان البث المباشر" required>
+        <textarea id="liveEmbed" placeholder="أدخل رابط أو كود التضمين (مثال: https://www.youtube.com/live/...)" rows="3" required></textarea>
+        <button type="submit">بدء البث المباشر</button>
+      </form>
+      <hr style="margin: 15px 0;">
+      <button onclick="startLocalCameraBroadcast()" style="background:#4a90e2; color:#fff; padding:10px; border:none; border-radius:4px; cursor:pointer;">
+        بدء البث من كاميرا الجهاز
+      </button>
+      <button onclick="stopLocalCameraBroadcast()" style="background:#e74c3c; color:#fff; padding:10px; border:none; border-radius:4px; cursor:pointer; margin-top:10px;">
+        إيقاف بث الكاميرا
+      </button>
+    </div>
+  </div>
+
+  <!-- نافذة دخول الإدارة -->
+  <div id="adminModal" class="modal">
+    <div class="modal-content">
+      <h2>دخول لوحة الإدارة</h2>
+      <input type="password" id="adminPassword" placeholder="أدخل الرقم السري">
+      <button onclick="adminLogin()">دخول</button>
+    </div>
+  </div>
+
+  <!-- رأس الصفحة -->
+  <header>
+    <h1>موقع الأخبار</h1>
+    <nav>
+      <ul>
+        <li><a href="#">الرئيسية</a></li>
+        <li><a href="#">سياسة</a></li>
+        <li><a href="#">اقتصاد</a></li>
+        <li><a href="#">رياضة</a></li>
+        <li><a href="#">تقنية</a></li>
+        <li><a href="#">صحة</a></li>
+      </ul>
+      <button class="toggle-btn" onclick="toggleDarkMode()">الوضع الليلي</button>
+    </nav>
+    <button class="toggle-btn admin-login" onclick="openAdminModal()">الدخول للإدارة</button>
+  </header>
+
+  <!-- المحتوى الرئيسي -->
+  <main id="mainContent">
+    <!-- قسم البث المباشر في أعلى الصفحة -->
+    <section id="liveBroadcast" class="live-broadcast" style="display: none;"></section>
+
+    <!-- قسم الأخبار تحته -->
+    <section id="newsContainer" class="news-section">
+      <div class="placeholder">سيتم إضافة الأخبار هنا لاحقاً.</div>
+    </section>
+
+    <!-- زر الرجوع للأعلى -->
+    <button id="backToTop" onclick="scrollToTop()">&#8679;</button>
+  </main>
+
+  <!-- تذييل الصفحة -->
+  <footer>
+    <p>حقوق النشر &copy; 2025 موقع الأخبار. جميع الحقوق محفوظة.</p>
+  </footer>
+
+  <script>
+    /* ========== الوضع الليلي ========== */
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark-mode');
+      if (document.body.classList.contains('dark-mode')) {
+        localStorage.setItem('darkMode', 'enabled');
+      } else {
+        localStorage.setItem('darkMode', 'disabled');
+      }
+    }
+    document.addEventListener('DOMContentLoaded', function(){
+      if(localStorage.getItem('darkMode') === 'enabled'){
+        document.body.classList.add('dark-mode');
+      }
+    });
+
+    /* ========== زر الرجوع للأعلى ========== */
+    window.onscroll = function() { showBackToTop(); };
+    function showBackToTop(){
+      const button = document.getElementById('backToTop');
+      if(document.body.scrollTop > 200 || document.documentElement.scrollTop > 200){
+        button.style.display = "block";
+      } else {
+        button.style.display = "none";
+      }
+    }
+    function scrollToTop(){
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    /* ========== لوحة الإدارة ========== */
+    let adminLoggedIn = false;
+    function openAdminModal() {
+      document.getElementById('adminModal').style.display = 'flex';
+    }
+    function adminLogin() {
+      const passwordInput = document.getElementById('adminPassword').value;
+      if(passwordInput === "88188") {
+        adminLoggedIn = true;
+        document.getElementById('adminModal').style.display = 'none';
+        toggleAdminSidebar(true);
+      } else {
+        alert("رقم سري غير صحيح!");
+      }
+    }
+    function toggleAdminSidebar(forceOpen = false) {
+      const sidebar = document.getElementById('adminSidebar');
+      if(forceOpen) {
+        sidebar.classList.add('active');
+        document.getElementById('mainContent').style.marginLeft = "300px";
+      } else {
+        if(sidebar.classList.contains('active')){
+          sidebar.classList.remove('active');
+          document.getElementById('mainContent').style.marginLeft = "0";
+        } else {
+          sidebar.classList.add('active');
+          document.getElementById('mainContent').style.marginLeft = "300px";
+        }
+      }
+    }
+    function showAdminTab(tab) {
+      if(tab === 'news'){
+        document.getElementById('adminNews').classList.add('active');
+        document.getElementById('adminLive').classList.remove('active');
+        document.getElementById('newsTab').classList.add('active');
+        document.getElementById('liveTab').classList.remove('active');
+      } else if(tab === 'live'){
+        document.getElementById('adminLive').classList.add('active');
+        document.getElementById('adminNews').classList.remove('active');
+        document.getElementById('liveTab').classList.add('active');
+        document.getElementById('newsTab').classList.remove('active');
+      }
+    }
+    /* إغلاق نافذة الدخول عند الضغط خارجها */
+    window.onclick = function(event) {
+      const modal = document.getElementById('adminModal');
+      if (event.target == modal) {
+        modal.style.display = "none";
+      }
+    }
+
+    /* ========== الأخبار: إضافة / تعديل / حذف ========== */
+    let currentEditingCard = null;
+    document.getElementById('newsForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const title = document.getElementById('newsTitle').value;
+      const summary = document.getElementById('newsSummary').value;
+      const link = document.getElementById('newsLink').value;
+      const fileInput = document.getElementById('newsImageFile');
+      const imageSize = document.getElementById('newsImageSize').value;
+
+      if(fileInput.files && fileInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const imageSrc = event.target.result;
+          if(currentEditingCard) {
+            updateNewsCard(currentEditingCard, title, summary, imageSrc, link, imageSize);
+            alert("تم تحديث الخبر: " + title);
+            currentEditingCard = null;
+            document.getElementById('submitNewsBtn').textContent = "نشر الخبر";
+            document.getElementById('cancelEdit').style.display = "none";
+          } else {
+            addNewsCard(title, summary, imageSrc, link, imageSize);
+            alert("تم نشر الخبر: " + title);
+          }
+          e.target.reset();
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+      } else {
+        if(currentEditingCard) {
+          updateNewsCard(currentEditingCard, title, summary, currentEditingCard.querySelector('img').src, link, imageSize);
+          alert("تم تحديث الخبر: " + title);
+          currentEditingCard = null;
+          document.getElementById('submitNewsBtn').textContent = "نشر الخبر";
+          document.getElementById('cancelEdit').style.display = "none";
+          e.target.reset();
+        } else {
+          alert("يرجى اختيار صورة للخبر.");
+        }
+      }
+    });
+    document.getElementById('cancelEdit').addEventListener('click', function(){
+      currentEditingCard = null;
+      document.getElementById('newsForm').reset();
+      document.getElementById('submitNewsBtn').textContent = "نشر الخبر";
+      this.style.display = "none";
+    });
+
+    /* دالة لإضافة بطاقة خبر جديدة في أعلى القائمة (الأحدث في الأعلى) */
+    function addNewsCard(title, summary, imageSrc, link, imageSize) {
+      const newsContainer = document.getElementById('newsContainer');
+      const placeholder = newsContainer.querySelector('.placeholder');
+      if(placeholder) { placeholder.remove(); }
+
+      // أنشئ العنصر الجديد
+      const newsCard = document.createElement('div');
+      newsCard.className = `news-card news-card-${imageSize}`;
+      let squareSize;
+      if(imageSize === "large") { squareSize = "250px"; }
+      else if(imageSize === "medium") { squareSize = "180px"; }
+      else if(imageSize === "small") { squareSize = "120px"; }
+
+      newsCard.innerHTML = `
+        <div class="img-container" style="width: ${squareSize}; height: ${squareSize}; margin: auto;">
+          <img src="${imageSrc}" alt="صورة الخبر" style="width: 100%; height: 100%; object-fit: contain;">
+        </div>
+        <div class="content">
+          <h3>${title}</h3>
+          <p>${summary}</p>
+          <a href="${link}" target="_blank">اقرأ المزيد</a>
+        </div>
+      `;
+
+      // إنشاء أزرار التعديل والحذف
+      const actions = document.createElement('div');
+      actions.className = "card-actions";
+      const editBtn = document.createElement('button');
+      editBtn.textContent = "تعديل";
+      editBtn.addEventListener('click', function(){
+        editNewsCard(newsCard);
+      });
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = "حذف";
+      deleteBtn.addEventListener('click', function(){
+        if(confirm("هل أنت متأكد من حذف هذا الخبر؟")) {
+          newsCard.remove();
+        }
+      });
+      actions.appendChild(editBtn);
+      actions.appendChild(deleteBtn);
+      newsCard.querySelector('.content').appendChild(actions);
+
+      // **إضافة العنصر الجديد في أعلى القائمة** بدلاً من أسفلها
+      newsContainer.insertBefore(newsCard, newsContainer.firstChild);
+    }
+
+    function editNewsCard(card) {
+      currentEditingCard = card;
+      const title = card.querySelector('h3').textContent;
+      const summary = card.querySelector('p').textContent;
+      const link = card.querySelector('a').href;
+      let size = "medium";
+      if(card.classList.contains('news-card-large')) size = "large";
+      else if(card.classList.contains('news-card-small')) size = "small";
+
+      document.getElementById('newsTitle').value = title;
+      document.getElementById('newsSummary').value = summary;
+      document.getElementById('newsLink').value = link;
+      document.getElementById('newsImageSize').value = size;
+      document.getElementById('submitNewsBtn').textContent = "تحديث الخبر";
+      document.getElementById('cancelEdit').style.display = "block";
+    }
+
+    function updateNewsCard(card, title, summary, imageSrc, link, imageSize) {
+      card.querySelector('h3').textContent = title;
+      card.querySelector('p').textContent = summary;
+      card.querySelector('a').href = link;
+      let squareSize;
+      if(imageSize === "large") { squareSize = "250px"; }
+      else if(imageSize === "medium") { squareSize = "180px"; }
+      else if(imageSize === "small") { squareSize = "120px"; }
+      const imgContainer = card.querySelector('.img-container');
+      if(imgContainer) {
+        imgContainer.style.width = squareSize;
+        imgContainer.style.height = squareSize;
+      }
+      card.querySelector('.img-container img').src = imageSrc;
+      card.classList.remove('news-card-large', 'news-card-medium', 'news-card-small');
+      card.classList.add(`news-card-${imageSize}`);
+    }
+
+    /* تحويل روابط يوتيوب إلى رابط embed */
+    function parseYoutubeLink(url) {
+      try {
+        const youTubeRegexes = [
+          /youtube\.com\/watch\?v=([^&]+)/,
+          /youtu\.be\/([^?]+)/,
+          /youtube\.com\/live\/([^?]+)/,
+        ];
+        for(const regex of youTubeRegexes) {
+          const match = url.match(regex);
+          if(match && match[1]) {
+            return `https://www.youtube.com/embed/${match[1]}`;
+          }
+        }
+      } catch(e) {}
+      return null;
+    }
+
+    /* ========== البث المباشر ========== */
+    document.getElementById('liveForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const liveTitle = document.getElementById('liveTitle').value;
+      let liveEmbed = document.getElementById('liveEmbed').value.trim();
+
+      // حاول تحويل رابط يوتيوب إلى صيغة embed
+      if((liveEmbed.startsWith("http://") || liveEmbed.startsWith("https://")) && liveEmbed.includes("youtube.com")) {
+        const embedUrl = parseYoutubeLink(liveEmbed);
+        if(embedUrl) {
+          liveEmbed = embedUrl;
+        }
+      }
+      startLiveBroadcast(liveTitle, liveEmbed);
+      alert("تم بدء البث المباشر: " + liveTitle);
+      e.target.reset();
+    });
+    function startLiveBroadcast(title, embedCode) {
+      const liveBroadcast = document.getElementById('liveBroadcast');
+      liveBroadcast.style.display = "block";
+      let videoHTML = "";
+      if(embedCode.startsWith("http://") || embedCode.startsWith("https://")){
+        videoHTML = `<iframe src="${embedCode}" frameborder="0" allowfullscreen style="width:100%; height:400px;"></iframe>`;
+      } else {
+        videoHTML = embedCode; // كود تضمين HTML
+      }
+      liveBroadcast.innerHTML = `
+        <button class="delete-broadcast-btn" onclick="deleteBroadcast()">حذف البث</button>
+        <h2>${title}</h2>
+        <div class="live-embed">${videoHTML}</div>
+      `;
+    }
+    function deleteBroadcast() {
+      const liveBroadcast = document.getElementById('liveBroadcast');
+      liveBroadcast.innerHTML = '';
+      liveBroadcast.style.display = 'none';
+      alert("تم حذف البث المباشر بنجاح.");
+    }
+
+    /* ========== بث الكاميرا من الجهاز (عرض محلي) ========== */
+    let localStream = null;
+    async function startLocalCameraBroadcast() {
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        const liveBroadcast = document.getElementById('liveBroadcast');
+        liveBroadcast.style.display = "block";
+        liveBroadcast.innerHTML = `
+          <button class="delete-broadcast-btn" onclick="deleteBroadcast()">حذف البث</button>
+          <h2>بث الكاميرا المحلية</h2>
+          <video id="localCameraVideo" autoplay playsinline style="width:100%; height:400px; background:#000;"></video>
+        `;
+        const videoElement = document.getElementById('localCameraVideo');
+        videoElement.srcObject = localStream;
+      } catch (err) {
+        alert("حدث خطأ أثناء الوصول إلى الكاميرا: " + err.message);
+      }
+    }
+    function stopLocalCameraBroadcast() {
+      if(localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
+      }
+      deleteBroadcast();
+    }
+  </script>
+</body>
+</html>
